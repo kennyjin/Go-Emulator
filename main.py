@@ -1,4 +1,6 @@
 
+import random
+
 PROTOCOL_VERSION = 2
 NAME = "Go Emulator"
 VERSION = 0.1
@@ -18,8 +20,65 @@ list_commands = ["protocol_version", "name", "version", "known_command",
 set_commands = set(list_commands)
 
 # TODO
-# Parse coordinates, C12 -> (7, 3)
 # play, genmove
+
+'''
+input: color, either black, b or white, w
+board
+returns the coordinates of the next move
+random move selection
+'''
+def genmove(color, board):
+    valid_positions = []
+    for i in range(len(board)):
+        for j in range(len(board[0])):
+            if board[i][j] == 0:
+                # TODO need to add more invalid conditions
+                valid_positions.append((i, j))
+
+    # When there are no valid positions, the program will pass
+
+    if len(valid_positions) == 0:
+        return None
+
+    (row, col) = random.choice(valid_positions)
+
+    return row, col
+
+
+'''
+Parse coordinates, C12 -> (7, 3)
+Note that C corresponds to the column number, 12 corresponds to the row number
+There is no "I" in the letter part, J follows H
+'''
+def parse_letter_num_coor(l_n_coor, boardsize):
+    l_n_coor = l_n_coor.lower()
+    letter = l_n_coor[0]
+    num = l_n_coor[1:]
+
+    if not letter.isalpha() or letter == 'i':
+        return None
+
+    if not num.isdigit():
+        return None
+
+    row = boardsize - int(num)
+    col = ord(letter) - ord('a') if letter < 'j' else ord(letter) - ord('a') - 1
+
+    if row < 0 or row >= boardsize or col < 0 or col >= boardsize:
+        return None
+
+    return row, col
+
+'''
+Parse coordinates, (7, 3) -> C12
+Note that C corresponds to the column number, 12 corresponds to the row number
+There is no "I" in the letter part, J follows H
+'''
+def parse_row_col_coor(row, col, boardsize):
+    letter = chr(col + ord('a')) if col < 8 else chr(col + 1 + ord('a'))
+    num = boardsize - row
+    return letter.upper() + str(num)
 
 '''
 Input: board, a 2d array with size boardsize * boardsize
@@ -72,6 +131,10 @@ def showboard(board):
 
 
 if __name__ == '__main__':
+    print(NAME + ' v' + str(VERSION))
+    print("Type 'list_commands' to check available commands.")
+    print()
+
     while True:
         s = input()
         s = s.strip()
@@ -156,10 +219,91 @@ if __name__ == '__main__':
             print()
             continue
 
+        if s[0] == "play":
+            if len(s) != 3:
+                print("? Expected 2 arguments for play")
+                print()
+                continue
+
+            color = s[1]
+            pos = s[2]
+
+            if pos == 'pass':
+                print(out.format(''))
+                print()
+                continue
+
+            if color.lower() not in ['black', 'b', 'white', 'w']:
+                print("? Invalid color")
+                print()
+                continue
+
+            new_pos = parse_letter_num_coor(pos, boardsize)
+
+            if new_pos == None:
+                print("? Invalid move position")
+                print()
+                continue
+
+            row, col = new_pos
+
+            # if the position has already been occupied, then move is invalid
+            if board[row][col] != 0:
+                print("? Invalid move position")
+                print()
+                continue
+
+            # TODO add other invalid conditions
+
+            if color.lower() == 'black' or color.lower() == 'b':
+                color = -1
+            else:
+                color = 1
+
+            board[row][col] = color
+            print(out.format(''))
+            print()
+            continue
+
+        if s[0] == "genmove":
+            if len(s) != 2:
+                print("? Expected color argument for genmove")
+                print()
+                continue
+
+            if s[1].lower() not in ['black', 'b', 'white', 'w']:
+                print("? Invalid color")
+                print()
+                continue
+
+            new_pos = genmove(s[1], board)
+
+            if new_pos == None:
+                print(out.format('pass'))
+                print()
+                continue
+
+            row, col = new_pos
+
+            if s[1].lower() == 'black' or s[1].lower() == 'b':
+                board[row][col] = -1
+            else:
+                board[row][col] = 1
+
+            l_n_coor = parse_row_col_coor(row, col, boardsize)
+            print(out.format(l_n_coor))
+            print()
+            continue
+
+
         if s[0] == "showboard":
             print(out.format(''))
             print(showboard(board))
             print()
+            continue
 
         if s[0] == "quit":
             break
+
+        print("? Unknown command")
+        print()

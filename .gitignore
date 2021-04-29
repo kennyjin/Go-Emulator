@@ -1,3 +1,13 @@
 
 *.lnk
 *.ini
+*.pyc
+*.toc
+*.zip
+*.manifest
+*.pkg
+*.pyz
+build/main/warn-main.txt
+build/main/xref-main.html
+dist/main.exe
+*.spec
