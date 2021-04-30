@@ -23,17 +23,38 @@ set_commands = set(list_commands)
 # play, genmove
 
 '''
-input: color, either black, b or white, w
+Checks if the move to be played is valid
+inputs:
+color: -1 for black, 1 for white
+row, col are integers
+returns whether the move is valid
+'''
+def valid_move(color, row, col, board):
+    pass
+
+'''
+Always use valid_move() to check move validity before calling play_move()
+unless it is used after genmove(), which will always gives a valid move position
+inputs:
+color: -1 for black, 1 for white
+row, col are integers
+returns None
+'''
+def play_move(color, row, col, board):
+    pass
+
+'''
+inputs: color, either black, b or white, w
 board
 returns the coordinates of the next move
 random move selection
+this function will always return a valid move position or None (for pass).
 '''
 def genmove(color, board):
     valid_positions = []
     for i in range(len(board)):
         for j in range(len(board[0])):
-            if board[i][j] == 0:
-                # TODO need to add more invalid conditions
+            if board[i][j] == 0 and valid_move(color, i, j, board):
                 valid_positions.append((i, j))
 
     # When there are no valid positions, the program will pass
@@ -247,20 +268,18 @@ if __name__ == '__main__':
 
             row, col = new_pos
 
-            # if the position has already been occupied, then move is invalid
-            if board[row][col] != 0:
-                print("? Invalid move position")
-                print()
-                continue
-
-            # TODO add other invalid conditions
-
             if color.lower() == 'black' or color.lower() == 'b':
                 color = -1
             else:
                 color = 1
 
-            board[row][col] = color
+            if not valid_move(color, row, col, board):
+                print("? Invalid move position")
+                print()
+                continue
+
+            play_move(color, row, col, board)
+
             print(out.format(''))
             print()
             continue
@@ -276,7 +295,12 @@ if __name__ == '__main__':
                 print()
                 continue
 
-            new_pos = genmove(s[1], board)
+            if s[1].lower() == 'black' or s[1].lower() == 'b':
+                color = -1
+            else:
+                color = 1
+
+            new_pos = genmove(color, board)
 
             if new_pos == None:
                 print(out.format('pass'))
@@ -285,10 +309,7 @@ if __name__ == '__main__':
 
             row, col = new_pos
 
-            if s[1].lower() == 'black' or s[1].lower() == 'b':
-                board[row][col] = -1
-            else:
-                board[row][col] = 1
+            play_move(color, row, col, board)
 
             l_n_coor = parse_row_col_coor(row, col, boardsize)
             print(out.format(l_n_coor))
