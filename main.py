@@ -252,9 +252,9 @@ def showboard(board):
 
 
 if __name__ == '__main__':
-    print(NAME + ' v' + str(VERSION))
-    print("Type 'list_commands' to check available commands.")
-    print()
+    # print(NAME + ' v' + str(VERSION))
+    # print("Type 'list_commands' to check available commands.")
+    # print()
 
     while True:
         s = input()
