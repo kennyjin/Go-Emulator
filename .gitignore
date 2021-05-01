@@ -11,3 +11,5 @@ build/main/warn-main.txt
 build/main/xref-main.html
 dist/main.exe
 *.spec
+Go_Board_Test.ipynb
+.ipynb_checkpoints/Go_Board_Test-checkpoint.ipynb

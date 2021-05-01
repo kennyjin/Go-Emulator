@@ -20,7 +20,75 @@ list_commands = ["protocol_version", "name", "version", "known_command",
 set_commands = set(list_commands)
 
 # TODO
-# play, genmove
+# random play seems to be slower when move number is large, need to investigate
+
+from collections import deque
+'''
+take the stones out of the board by
+setting the connected group of (row, col) to 0
+returns the number of stones captured
+'''
+def capture_stones(row, col, board):
+    color = board[row][col]
+    if color == 0:
+        return 0
+    
+    queue = deque([])
+    visited = set()
+    queue.append((row, col))
+    visited.add((row, col))
+    board[row][col] = 0
+    
+    while queue:
+        (curr_row, curr_col) = queue.popleft()
+        for drow, dcol in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            new_row, new_col = curr_row + drow, curr_col + dcol
+            if 0 <= new_row < len(board) and 0 <= new_col < len(board[0]) and (new_row, new_col) not in visited and board[new_row][new_col] == color:
+                queue.append((new_row, new_col))
+                visited.add((new_row, new_col))
+                board[new_row][new_col] = 0
+                
+    return len(visited)
+
+'''
+Count liberties for the connected group of (row, col)
+if fast_mode is True, return 1 as soon as the group has >= 1 liberties
+return liberty count
+'''
+
+def count_liberties(row, col, board, fast_mode=False):
+    if board[row][col] == 0:
+        return 0
+    
+    color = board[row][col]
+    
+    queue = deque([])
+    visited = set()
+    queue.append((row, col))
+    visited.add((row, col))
+    
+    # the set of visited liberty positions
+    visited_li = set()
+    
+    while queue:
+        (curr_row, curr_col) = queue.popleft()
+        for drow, dcol in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            new_row, new_col = curr_row + drow, curr_col + dcol
+            if 0 <= new_row < len(board) and 0 <= new_col < len(board[0]):
+                # Add liberty position to visited_li
+                if board[new_row][new_col] == 0 and (new_row, new_col) not in visited_li:
+                    # The group will have at least 1 liberty
+                    if fast_mode:
+                        return 1
+                    visited_li.add((new_row, new_col))
+
+                if board[new_row][new_col] == color and (new_row, new_col) not in visited:
+                    queue.append((new_row, new_col))
+                    visited.add((new_row, new_col))
+                    continue
+                
+    
+    return len(visited_li)
 
 '''
 Checks if the move to be played is valid
@@ -30,18 +98,50 @@ row, col are integers
 returns whether the move is valid
 '''
 def valid_move(color, row, col, board):
-    pass
+    if not (0 <= row < len(board) and 0 <= col < len(board[0])):
+        return False
+
+    if board[row][col] != 0:
+        return False
+    
+    board[row][col] = color
+    
+    # check if the connected group of color has >= 1 liberty
+    if count_liberties(row, col, board, fast_mode=True) >= 1:
+        board[row][col] = 0
+        return True
+    
+    # check if any of the opponent's stone will be captured
+    for drow, dcol in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        curr_row, curr_col = row + drow, col + dcol
+        if 0 <= curr_row < len(board) and 0 <= curr_col < len(board[0]) and board[curr_row][curr_col] == -color:
+            li = count_liberties(curr_row, curr_col, board, fast_mode=True)
+            if li == 0:
+                board[row][col] = 0
+                return True
+            
+    board[row][col] = 0
+    return False
 
 '''
-Always use valid_move() to check move validity before calling play_move()
-unless it is used after genmove(), which will always gives a valid move position
 inputs:
 color: -1 for black, 1 for white
 row, col are integers
 returns None
 '''
 def play_move(color, row, col, board):
-    pass
+    if not valid_move(color, row, col, board):
+        return
+    
+    board[row][col] = color
+    
+    # Capture opponent's stone
+    for drow, dcol in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        curr_row, curr_col = row + drow, col + dcol
+        if 0 <= curr_row < len(board) and 0 <= curr_col < len(board[0]) and board[curr_row][curr_col] == -color:
+            li = count_liberties(curr_row, curr_col, board, fast_mode=True)
+            if li == 0:
+                capture_stones(curr_row, curr_col, board)
 
 '''
 inputs: color, either black, b or white, w
