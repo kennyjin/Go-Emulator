@@ -414,7 +414,7 @@ if __name__ == '__main__':
             color = s[1]
             pos = s[2]
 
-            if pos == 'pass':
+            if pos.lower() == 'pass':
                 print(out.format(''))
                 print()
                 continue
