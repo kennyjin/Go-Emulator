@@ -1,5 +1,6 @@
 
 import random
+from collections import deque
 
 PROTOCOL_VERSION = 2
 NAME = "Go Emulator"
@@ -14,15 +15,22 @@ valid_boardsize_range = (2, 25)
 # 0 for empty, -1 for black, 1 for white
 board = [[0] * boardsize for _ in range(boardsize)]
 
+# a list of previous board positions
+# each board position is stored as a 2d tuple
+board_positions = []
+board_positions.append(tuple(tuple(row) for row in board))
+
+# a set of previous board positions
+# each board position is stored as a 2d tuple
+board_positions_set = set(board_positions)
+
 list_commands = ["protocol_version", "name", "version", "known_command", 
 "list_commands", "quit", "boardsize", "clear_board", "komi", "play", "genmove", "showboard"]
 
 set_commands = set(list_commands)
 
-# TODO
-# random play seems to be slower when move number is large, need to investigate
+# random play seems to be slower when move number is large, which seems to be the problem of Sabaki
 
-from collections import deque
 '''
 take the stones out of the board by
 setting the connected group of (row, col) to 0
@@ -97,7 +105,7 @@ color: -1 for black, 1 for white
 row, col are integers
 returns whether the move is valid
 '''
-def valid_move(color, row, col, board):
+def valid_move(color, row, col, board, board_positions, board_positions_set):
     if not (0 <= row < len(board) and 0 <= col < len(board[0])):
         return False
 
@@ -105,33 +113,65 @@ def valid_move(color, row, col, board):
         return False
     
     board[row][col] = color
+
+    # When it is False after 2 steps, the move must be invalid. When it is True, we need to check for ko
+    ko_check = False
     
     # check if the connected group of color has >= 1 liberty
     if count_liberties(row, col, board, fast_mode=True) >= 1:
         board[row][col] = 0
-        return True
+        ko_check = True
+        # return True
     
-    # check if any of the opponent's stone will be captured
+    if not ko_check:
+        # check if any of the opponent's stone will be captured
+        for drow, dcol in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            curr_row, curr_col = row + drow, col + dcol
+            if 0 <= curr_row < len(board) and 0 <= curr_col < len(board[0]) and board[curr_row][curr_col] == -color:
+                li = count_liberties(curr_row, curr_col, board, fast_mode=True)
+                if li == 0:
+                    board[row][col] = 0
+                    ko_check = True
+                    # return True
+
+    if not ko_check:
+        board[row][col] = 0
+        return False
+
+    # The move meets the basic requirements of validity, now check for ko
+    board[row][col] = color
+    
+    # Capture opponent's stone
     for drow, dcol in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         curr_row, curr_col = row + drow, col + dcol
         if 0 <= curr_row < len(board) and 0 <= curr_col < len(board[0]) and board[curr_row][curr_col] == -color:
             li = count_liberties(curr_row, curr_col, board, fast_mode=True)
             if li == 0:
-                board[row][col] = 0
-                return True
-            
-    board[row][col] = 0
-    return False
+                capture_stones(curr_row, curr_col, board)
+
+    if tuple(tuple(row) for row in board) in board_positions_set:
+        # restore board to the previous board position
+        # cannot set board to a new object as it will not impact board outside of this function
+        for i in range(len(board)):
+            for j in range(len(board[1])):
+                board[i][j] = board_positions[-1][i][j]
+        return False
+
+    # restore board to the previous board position        
+    for i in range(len(board)):
+        for j in range(len(board[1])):
+            board[i][j] = board_positions[-1][i][j]
+
+    return True
 
 '''
 inputs:
 color: -1 for black, 1 for white
 row, col are integers
 returns None
+call valid_move() before calling this
 '''
-def play_move(color, row, col, board):
-    if not valid_move(color, row, col, board):
-        return
+def play_move(color, row, col, board, board_positions, board_positions_set):
     
     board[row][col] = color
     
@@ -143,6 +183,11 @@ def play_move(color, row, col, board):
             if li == 0:
                 capture_stones(curr_row, curr_col, board)
 
+    # save current board position
+    board_positions.append(tuple(tuple(row) for row in board))
+    board_positions_set.add(tuple(tuple(row) for row in board))
+    # print(len(board_positions), len(board_positions_set))
+
 '''
 inputs: color, either black, b or white, w
 board
@@ -150,11 +195,11 @@ returns the coordinates of the next move
 random move selection
 this function will always return a valid move position or None (for pass).
 '''
-def genmove(color, board):
+def genmove(color, board, board_positions, board_positions_set):
     valid_positions = []
     for i in range(len(board)):
         for j in range(len(board[0])):
-            if board[i][j] == 0 and valid_move(color, i, j, board):
+            if board[i][j] == 0 and valid_move(color, i, j, board, board_positions, board_positions_set):
                 valid_positions.append((i, j))
 
     # When there are no valid positions, the program will pass
@@ -206,6 +251,7 @@ Input: board, a 2d array with size boardsize * boardsize
 Return: a string representation of the board
 '''
 def showboard(board):
+    # print(board)
     res = ''
     col_names = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
     num_rows = len(board)
@@ -314,12 +360,31 @@ if __name__ == '__main__':
                 boardsize = int(s[1])
                 board = [[0] * boardsize for _ in range(boardsize)]
 
+                # a list of previous board positions
+                # each board position is stored as a 2d tuple
+                board_positions = []
+                board_positions.append(tuple(tuple(row) for row in board))
+
+                # a set of previous board positions
+                # each board position is stored as a 2d tuple
+                board_positions_set = set(board_positions)
+
             print(out.format(''))
             print()
             continue
 
         if s[0] == "clear_board":
             board = [[0] * boardsize for _ in range(boardsize)]
+
+            # a list of previous board positions
+            # each board position is stored as a 2d tuple
+            board_positions = []
+            board_positions.append(tuple(tuple(row) for row in board))
+
+            # a set of previous board positions
+            # each board position is stored as a 2d tuple
+            board_positions_set = set(board_positions)
+
             print(out.format(''))
             print()
             continue
@@ -360,6 +425,7 @@ if __name__ == '__main__':
                 continue
 
             new_pos = parse_letter_num_coor(pos, boardsize)
+            # print(new_pos)
 
             if new_pos == None:
                 print("? Invalid move position")
@@ -373,12 +439,12 @@ if __name__ == '__main__':
             else:
                 color = 1
 
-            if not valid_move(color, row, col, board):
+            if not valid_move(color, row, col, board, board_positions, board_positions_set):
                 print("? Invalid move position")
                 print()
                 continue
 
-            play_move(color, row, col, board)
+            play_move(color, row, col, board, board_positions, board_positions_set)
 
             print(out.format(''))
             print()
@@ -400,7 +466,7 @@ if __name__ == '__main__':
             else:
                 color = 1
 
-            new_pos = genmove(color, board)
+            new_pos = genmove(color, board, board_positions, board_positions_set)
 
             if new_pos == None:
                 print(out.format('pass'))
@@ -409,7 +475,7 @@ if __name__ == '__main__':
 
             row, col = new_pos
 
-            play_move(color, row, col, board)
+            play_move(color, row, col, board, board_positions, board_positions_set)
 
             l_n_coor = parse_row_col_coor(row, col, boardsize)
             print(out.format(l_n_coor))
