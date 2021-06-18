@@ -13,3 +13,5 @@ dist/main.exe
 *.spec
 Go_Board_Test.ipynb
 .ipynb_checkpoints/Go_Board_Test-checkpoint.ipynb
+build_exe.txt
+list_commands.txt
