@@ -25,7 +25,7 @@ board_positions.append(tuple(tuple(row) for row in board))
 board_positions_set = set(board_positions)
 
 list_commands = ["protocol_version", "name", "version", "known_command", 
-"list_commands", "quit", "boardsize", "clear_board", "komi", "play", "genmove", "showboard"]
+"list_commands", "quit", "boardsize", "clear_board", "komi", "play", "genmove", "showboard", "final_score"]
 
 set_commands = set(list_commands)
 
