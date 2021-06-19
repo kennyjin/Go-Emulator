@@ -293,6 +293,86 @@ def showboard(board):
 
     return res
 
+'''
+https://senseis.xmp.net/?TrompTaylorRules
+Computes the Tromp-Taylor score (komi not included) of the current board position.
+Returns black_score, white_score
+Note that empty points that can "reach" both black stones and white stones 
+are not included in either black_score or white_score.
+'''
+def tromp_taylor_score(board):
+    black_score, white_score = 0, 0
+    queue = deque([])
+    visited = set()
+    
+    for i in range(len(board)):
+        for j in range(len(board[0])):
+            if board[i][j] == -1:
+                black_score += 1
+                continue
+            elif board[i][j] == 1:
+                white_score += 1
+                continue
+                
+            # When getting to an empty point, we check what color this point can reach.
+            if (i, j) in visited:
+                continue
+                
+            reachable_black_cnt = 0
+            reachable_white_cnt = 0
+            queue.append((i, j))
+            visited.add((i, j))
+            
+            # The positions of visited reachable black stones and white stones
+            visited_bw = set()
+            
+            # The connected group of this empty point is of size 1 initially.
+            comp_size = 1
+            
+            while queue:
+                (curr_row, curr_col) = queue.popleft()
+                for drow, dcol in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    new_row, new_col = curr_row + drow, curr_col + dcol
+                    if 0 <= new_row < len(board) and 0 <= new_col < len(board[0]):
+                        if board[new_row][new_col] == 0 and (new_row, new_col) not in visited:
+                            queue.append((new_row, new_col))
+                            visited.add((new_row, new_col))
+                            comp_size += 1
+                            continue
+                            
+                        if board[new_row][new_col] == -1 and (new_row, new_col) not in visited_bw:
+                            reachable_black_cnt += 1
+                            visited_bw.add((new_row, new_col))
+                            continue
+                        
+                        if board[new_row][new_col] == 1 and (new_row, new_col) not in visited_bw:
+                            reachable_white_cnt += 1
+                            visited_bw.add((new_row, new_col))
+                            continue
+                            
+            if reachable_black_cnt > 0 and reachable_white_cnt == 0:
+                black_score += comp_size
+            elif reachable_black_cnt == 0 and reachable_white_cnt > 0:
+                white_score += comp_size
+                        
+                
+    return black_score, white_score
+
+'''
+Returns the final score of the game, using Tromp-Taylor scoring.
+Example results: 'B+2.5' (Black wins by 2.5 points), 'W+0.5' (White wins by 0.5 points), etc.
+'''
+def final_score(board, komi):
+    black_score, white_score = tromp_taylor_score(board)
+    white_score += komi
+    
+    # Draw
+    if black_score == white_score:
+        return '0'
+    if black_score > white_score:
+        return 'B+{}'.format(black_score - white_score)
+    return 'W+{}'.format(white_score - black_score)
+
 
 
 
@@ -486,6 +566,11 @@ if __name__ == '__main__':
         if s[0] == "showboard":
             print(out.format(''))
             print(showboard(board))
+            print()
+            continue
+
+        if s[0] == 'final_score':
+            print(out.format(final_score(board, komi)))
             print()
             continue
 
