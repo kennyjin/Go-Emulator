@@ -184,6 +184,7 @@ def play_move(color, row, col, board, board_positions, board_positions_set):
     # print(len(board_positions), len(board_positions_set))
 
 '''
+TODO This function could possibly be optimized for speed
 inputs: color, either black as -1 or white as 1
 returns the coordinates of the next move
 randomly selecting moves
