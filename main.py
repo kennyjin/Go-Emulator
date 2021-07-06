@@ -23,7 +23,7 @@ board_positions.append(tuple(tuple(row) for row in board))
 board_positions_set = set(board_positions)
 
 list_commands = ["protocol_version", "name", "version", "known_command", 
-"list_commands", "quit", "boardsize", "clear_board", "komi", "play", "genmove", "showboard", "final_score"]
+"list_commands", "quit", "boardsize", "clear_board", "komi", "play", "genmove", "showboard", "final_score", "undo"]
 
 set_commands = set(list_commands)
 
@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
         if s[0] == "known_command":
             if len(s) != 2:
-                print("? Expected single argument for known_command")
+                print("? expected single argument for known_command")
                 print()
                 continue
 
@@ -77,12 +77,12 @@ if __name__ == '__main__':
 
         if s[0] == "boardsize":
             if len(s) != 2:
-                print("? Expected single integer argument for known_command")
+                print("? expected single integer argument for known_command")
                 print()
                 continue
 
             if int(s[1]) < valid_boardsize_range[0] or int(s[1]) > valid_boardsize_range[1]:
-                print("? Unacceptable size")
+                print("? unacceptable size")
                 print()
                 continue
 
@@ -123,12 +123,12 @@ if __name__ == '__main__':
 
         if s[0] == "komi":
             if len(s) != 2:
-                print("? Expected single float argument for komi")
+                print("? expected single float argument for komi")
                 print()
                 continue
 
             if float(s[1]) < valid_komi_range[0] or float(s[1]) > valid_komi_range[1]:
-                print("? Unacceptable komi")
+                print("? unacceptable komi")
                 print()
                 continue
 
@@ -139,7 +139,7 @@ if __name__ == '__main__':
 
         if s[0] == "play":
             if len(s) != 3:
-                print("? Expected 2 arguments for play")
+                print("? expected 2 arguments for play")
                 print()
                 continue
 
@@ -152,7 +152,7 @@ if __name__ == '__main__':
                 continue
 
             if color.lower() not in ['black', 'b', 'white', 'w']:
-                print("? Invalid color")
+                print("? invalid color")
                 print()
                 continue
 
@@ -160,7 +160,7 @@ if __name__ == '__main__':
             # print(new_pos)
 
             if new_pos == None:
-                print("? Invalid move position")
+                print("? invalid move position")
                 print()
                 continue
 
@@ -172,7 +172,7 @@ if __name__ == '__main__':
                 color = 1
 
             if not helper.valid_move(color, row, col, board, board_positions, board_positions_set):
-                print("? Invalid move position")
+                print("? invalid move position")
                 print()
                 continue
 
@@ -184,7 +184,7 @@ if __name__ == '__main__':
 
         if s[0] == "genmove":
             if len(s) != 2:
-                print("? Expected color argument for genmove")
+                print("? expected color argument for genmove")
                 print()
                 continue
 
@@ -229,5 +229,15 @@ if __name__ == '__main__':
         if s[0] == "quit":
             break
 
-        print("? Unknown command")
+        if s[0] == 'undo':
+            undoable = helper.undo(board, board_positions, board_positions_set)
+            if not undoable:
+                print("? cannot undo")
+                print()
+                continue
+            print(out.format(''))
+            print()
+            continue
+
+        print("? unknown command")
         print()

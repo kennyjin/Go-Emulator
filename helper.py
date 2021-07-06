@@ -123,16 +123,39 @@ def valid_move(color, row, col, board, board_positions, board_positions_set):
         # restore board to the previous board position
         # cannot set board to a new object as it will not impact board outside of this function
         for i in range(len(board)):
-            for j in range(len(board[1])):
+            for j in range(len(board[0])):
                 board[i][j] = board_positions[-1][i][j]
         return False
 
     # restore board to the previous board position        
     for i in range(len(board)):
-        for j in range(len(board[1])):
+        for j in range(len(board[0])):
             board[i][j] = board_positions[-1][i][j]
 
     return True
+
+'''
+Undo the previous move
+If the length of board positions <= 1, the position is not undoable.
+Return True is undo is successful, False otherwise. 
+'''
+def undo(board, board_positions, board_positions_set):
+    if len(board_positions) <= 1:
+        return False
+
+    # remove current board position from board_positions and board_positions_set
+    curr_board_position = board_positions.pop()
+    board_positions_set.remove(curr_board_position)
+
+    # restore board to the previous board position        
+    for i in range(len(board)):
+        for j in range(len(board[0])):
+            board[i][j] = board_positions[-1][i][j]
+
+    return True
+
+
+
 
 '''
 inputs:
