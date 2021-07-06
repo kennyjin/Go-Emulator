@@ -1,5 +1,6 @@
 import random
 from collections import deque
+import copy
 
 '''
 take the stones out of the board by
@@ -69,6 +70,7 @@ def count_liberties(row, col, board, fast_mode=False):
     return len(visited_li)
 
 '''
+TODO This function could possibly be optimized for speed
 Checks if the move to be played is valid
 inputs:
 color: -1 for black, 1 for white
@@ -182,10 +184,9 @@ def play_move(color, row, col, board, board_positions, board_positions_set):
     # print(len(board_positions), len(board_positions_set))
 
 '''
-inputs: color, either black, b or white, w
-board
+inputs: color, either black as -1 or white as 1
 returns the coordinates of the next move
-random move selection
+randomly selecting moves
 this function will always return a valid move position or None (for pass).
 '''
 def genmove(color, board, board_positions, board_positions_set):
@@ -353,15 +354,73 @@ def tromp_taylor_score(board):
 
 '''
 Returns the final score of the game, using Tromp-Taylor scoring.
+if num_only is True, return black_score - white_score
 Example results: 'B+2.5' (Black wins by 2.5 points), 'W+0.5' (White wins by 0.5 points), etc.
 '''
-def final_score(board, komi):
+def final_score(board, komi, num_only=False):
     black_score, white_score = tromp_taylor_score(board)
     white_score += komi
     
+    if num_only:
+        return black_score - white_score
+
     # Draw
     if black_score == white_score:
         return '0'
     if black_score > white_score:
         return 'B+{}'.format(black_score - white_score)
     return 'W+{}'.format(white_score - black_score)
+
+'''
+inputs: color, -1 for black and 1 for white
+returns: True if the game ends, False otherwise
+current implementation only uses a hard threshold of number of moves for checking game ends
+'''
+def check_game_end(color, board, board_positions, board_positions_set):
+    if len(board_positions) >= 400:
+        return True
+
+    return False
+
+'''
+inputs: color, -1 for black and 1 for white
+returns the final score of the game after it ends
+the final board position is a 2d tuple
+randomly selecting moves until the game ends
+this function is only for game simulation and will not impact the original board and board positions
+'''
+def play_to_end(color, board, board_positions, board_positions_set, komi):
+    board = copy.deepcopy(board)
+
+    # May not need deep copy for the following
+    board_positions = copy.copy(board_positions)
+    board_positions_set = copy.copy(board_positions_set)
+
+    while not check_game_end(color, board, board_positions, board_positions_set):
+        new_pos = genmove(color, board, board_positions, board_positions_set)
+
+        # when genmove() wants to pass, continue
+        if new_pos == None:
+            continue
+
+        row, col = new_pos
+
+        play_move(color, row, col, board, board_positions, board_positions_set)
+
+        # debug
+        # print(parse_row_col_coor(row, col, len(board)))
+
+        # switch color
+        color *= -1
+
+    # debug
+    # print(showboard(board) == showboard(board_positions[-1]))
+    # print()
+    # print(showboard(board_positions[-1]))
+
+    # return the score from the black's perspective
+    return final_score(board, komi, num_only=True)
+
+
+
+
