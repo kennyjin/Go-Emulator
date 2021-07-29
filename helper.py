@@ -184,7 +184,6 @@ def play_move(color, row, col, board, board_positions, board_positions_set):
     # print(len(board_positions), len(board_positions_set))
 
 '''
-TODO This function could possibly be optimized for speed
 inputs: color, either black as -1 or white as 1
 returns the coordinates of the next move
 randomly selecting moves
@@ -194,7 +193,7 @@ def genmove(color, board, board_positions, board_positions_set):
     valid_positions = []
     for i in range(len(board)):
         for j in range(len(board[0])):
-            if board[i][j] == 0 and valid_move(color, i, j, board, board_positions, board_positions_set):
+            if board[i][j] == 0:
                 valid_positions.append((i, j))
 
     # When there are no valid positions, the program will pass
@@ -202,9 +201,14 @@ def genmove(color, board, board_positions, board_positions_set):
     if len(valid_positions) == 0:
         return None
 
-    (row, col) = random.choice(valid_positions)
+    while len(valid_positions) >= 1:
+        (row, col) = random.choice(valid_positions)
+        # valid_move() is expensive, thus put it here to reduce the number of calls
+        if valid_move(color, row, col, board, board_positions, board_positions_set):
+            return row, col
+        valid_positions.remove((row, col))
 
-    return row, col
+    return None
 
 
 '''
